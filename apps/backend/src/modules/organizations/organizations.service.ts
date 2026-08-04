@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import { ForbiddenError, ConflictError } from '../../common/exceptions/domain.exception';
+import { ForbiddenError, ConflictError, NotFoundError } from '../../common/exceptions/domain.exception';
 import { ErrorCodes } from '../../common/exceptions/error-codes';
 import { toSlug } from '../../common/utils/slug';
 
@@ -66,5 +66,23 @@ export class OrganizationsService {
       );
     }
     return membership;
+  }
+
+  /**
+   * Verifies a workspace belongs to the given organization and is active.
+   * Used by workspace-scoped modules to close the cross-tenant gap: a member
+   * of org A must not reach org B's workspace by manipulating the URL.
+   */
+  async assertWorkspaceInOrg(workspaceId: string, organizationId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+    if (!workspace || workspace.deletedAt || workspace.organizationId !== organizationId) {
+      throw new NotFoundError(
+        ErrorCodes.WORKSPACE_NOT_FOUND,
+        'Workspace not found in this organization',
+      );
+    }
+    return workspace;
   }
 }

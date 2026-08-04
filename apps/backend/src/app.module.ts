@@ -10,6 +10,10 @@ import { AuditModule } from './modules/audit/audit.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
+import { ClientsModule } from './modules/clients/clients.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
+import { QuotationsModule } from './modules/quotations/quotations.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
@@ -35,6 +39,10 @@ import { PermissionsGuard } from './modules/rbac/permissions.guard';
     }),
     AuthModule,
     OrganizationsModule,
+    ClientsModule,
+    InvoicesModule,
+    QuotationsModule,
+    PaymentsModule,
     HealthModule,
   ],
   providers: [

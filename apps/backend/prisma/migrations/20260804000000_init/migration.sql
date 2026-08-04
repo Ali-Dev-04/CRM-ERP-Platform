@@ -4,6 +4,21 @@ CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'INVITED', 'DISABLED');
 -- CreateEnum
 CREATE TYPE "OrganizationPlan" AS ENUM ('FREE', 'STARTUP', 'ENTERPRISE');
 
+-- CreateEnum
+CREATE TYPE "ClientStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'BLACKLISTED');
+
+-- CreateEnum
+CREATE TYPE "InvoiceStatus" AS ENUM ('DRAFT', 'SENT', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "QuotationStatus" AS ENUM ('DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'CONVERTED');
+
+-- CreateEnum
+CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "PaymentMethod" AS ENUM ('CASH', 'CARD', 'BANK_TRANSFER', 'CHEQUE', 'ONLINE');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -118,6 +133,110 @@ CREATE TABLE "AuditLog" (
     CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Client" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT,
+    "phone" TEXT,
+    "company" TEXT,
+    "address" TEXT,
+    "notes" TEXT,
+    "status" "ClientStatus" NOT NULL DEFAULT 'ACTIVE',
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+
+    CONSTRAINT "Client_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Invoice" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "clientId" TEXT NOT NULL,
+    "number" TEXT NOT NULL,
+    "status" "InvoiceStatus" NOT NULL DEFAULT 'DRAFT',
+    "issueDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "dueDate" TIMESTAMP(3) NOT NULL,
+    "subtotalCents" BIGINT NOT NULL DEFAULT 0,
+    "discountCents" BIGINT NOT NULL DEFAULT 0,
+    "taxCents" BIGINT NOT NULL DEFAULT 0,
+    "totalCents" BIGINT NOT NULL DEFAULT 0,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Invoice_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InvoiceLine" (
+    "id" TEXT NOT NULL,
+    "invoiceId" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "quantity" DECIMAL(12,3) NOT NULL,
+    "unitPriceCents" BIGINT NOT NULL,
+    "totalCents" BIGINT NOT NULL,
+    "position" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "InvoiceLine_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Quotation" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "clientId" TEXT NOT NULL,
+    "number" TEXT NOT NULL,
+    "status" "QuotationStatus" NOT NULL DEFAULT 'DRAFT',
+    "issueDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiryDate" TIMESTAMP(3) NOT NULL,
+    "subtotalCents" BIGINT NOT NULL DEFAULT 0,
+    "discountCents" BIGINT NOT NULL DEFAULT 0,
+    "taxCents" BIGINT NOT NULL DEFAULT 0,
+    "totalCents" BIGINT NOT NULL DEFAULT 0,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "convertedInvoiceId" TEXT,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Quotation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QuotationLine" (
+    "id" TEXT NOT NULL,
+    "quotationId" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "quantity" DECIMAL(12,3) NOT NULL,
+    "unitPriceCents" BIGINT NOT NULL,
+    "totalCents" BIGINT NOT NULL,
+    "position" INTEGER NOT NULL DEFAULT 0,
+
+    CONSTRAINT "QuotationLine_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Payment" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "invoiceId" TEXT NOT NULL,
+    "amountCents" BIGINT NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "method" "PaymentMethod" NOT NULL,
+    "status" "PaymentStatus" NOT NULL DEFAULT 'COMPLETED',
+    "reference" TEXT,
+    "paidAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -169,6 +288,42 @@ CREATE INDEX "AuditLog_actorId_idx" ON "AuditLog"("actorId");
 -- CreateIndex
 CREATE INDEX "AuditLog_action_idx" ON "AuditLog"("action");
 
+-- CreateIndex
+CREATE INDEX "Client_workspaceId_status_idx" ON "Client"("workspaceId", "status");
+
+-- CreateIndex
+CREATE INDEX "Client_workspaceId_name_idx" ON "Client"("workspaceId", "name");
+
+-- CreateIndex
+CREATE INDEX "Invoice_workspaceId_status_idx" ON "Invoice"("workspaceId", "status");
+
+-- CreateIndex
+CREATE INDEX "Invoice_clientId_idx" ON "Invoice"("clientId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Invoice_workspaceId_number_key" ON "Invoice"("workspaceId", "number");
+
+-- CreateIndex
+CREATE INDEX "InvoiceLine_invoiceId_idx" ON "InvoiceLine"("invoiceId");
+
+-- CreateIndex
+CREATE INDEX "Quotation_workspaceId_status_idx" ON "Quotation"("workspaceId", "status");
+
+-- CreateIndex
+CREATE INDEX "Quotation_clientId_idx" ON "Quotation"("clientId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Quotation_workspaceId_number_key" ON "Quotation"("workspaceId", "number");
+
+-- CreateIndex
+CREATE INDEX "QuotationLine_quotationId_idx" ON "QuotationLine"("quotationId");
+
+-- CreateIndex
+CREATE INDEX "Payment_workspaceId_paidAt_idx" ON "Payment"("workspaceId", "paidAt");
+
+-- CreateIndex
+CREATE INDEX "Payment_invoiceId_idx" ON "Payment"("invoiceId");
+
 -- AddForeignKey
 ALTER TABLE "Organization" ADD CONSTRAINT "Organization_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -198,4 +353,31 @@ ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_actorId_fkey" FOREIGN KEY ("acto
 
 -- AddForeignKey
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Client" ADD CONSTRAINT "Client_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Invoice" ADD CONSTRAINT "Invoice_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InvoiceLine" ADD CONSTRAINT "InvoiceLine_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Quotation" ADD CONSTRAINT "Quotation_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Quotation" ADD CONSTRAINT "Quotation_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "Client"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QuotationLine" ADD CONSTRAINT "QuotationLine_quotationId_fkey" FOREIGN KEY ("quotationId") REFERENCES "Quotation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Payment" ADD CONSTRAINT "Payment_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "Invoice"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 

@@ -2,6 +2,29 @@
 
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.0] — 2026-08-04 — Milestone 2 (CRM domain)
+
+### Added
+- CRM data model: `Client`, `Invoice` + `InvoiceLine`, `Quotation` +
+  `QuotationLine`, `Payment`, with status enums and workspace scoping.
+- Clients module: full CRUD, soft-delete, search/status filters, pagination.
+- Invoices module: create with line items, auto-computed totals (integer cents),
+  workspace-sequential numbering with collision retry, guarded status
+  transitions (DRAFT→SENT→PARTIALLY_PAID/PAID/OVERDUE/CANCELLED).
+- Quotations module: create with line items; `CONVERTED` status turns a quote
+  into a draft invoice carrying its lines.
+- Payments module: record payments against non-draft invoices; recomputes the
+  invoice's paid status from all completed payments.
+- Shared `LineItemDto` and `money` utilities (BigInt cents, no float drift).
+- `OrganizationsService.assertWorkspaceInOrg` closes the cross-tenant gap for
+  workspace-scoped resources.
+- Unit tests for `ClientsService` and `money` utils.
+
+### Security
+- Every CRM route is org+workspace scoped and permission-gated
+  (`clients:*`, `invoices:*`, `quotations:*`, `payments:*`); workspace
+  membership is asserted before any read/write.
+
 ## [0.1.0] — 2026-08-04 — Milestone 1 (Foundation & Backend Core)
 
 ### Added

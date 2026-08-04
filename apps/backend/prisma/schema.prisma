@@ -32,6 +32,47 @@ enum OrganizationPlan {
   ENTERPRISE
 }
 
+// ── CRM enums ────────────────────────────────────────────────────────────────
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  BLACKLISTED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CONVERTED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  CHEQUE
+  ONLINE
+}
+
 // ── Identity ─────────────────────────────────────────────────────────────────
 
 model User {
@@ -101,6 +142,12 @@ model Workspace {
   deletedAt      DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id])
+
+  // Domain back-relations (added per module)
+  clients    Client[]
+  invoices   Invoice[]
+  quotations Quotation[]
+  payments   Payment[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -185,4 +232,133 @@ model AuditLog {
   @@index([organizationId, createdAt])
   @@index([actorId])
   @@index([action])
+}
+
+// ── CRM ──────────────────────────────────────────────────────────────────────
+// All CRM entities are workspace-scoped. Money is stored as integer cents to
+// avoid floating-point error. Numbers (invoice/quotation) are unique per
+// workspace and assigned transactionally.
+
+model Client {
+  id          String       @id @default(cuid())
+  workspaceId String
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  address     String?
+  notes       String?
+  status      ClientStatus @default(ACTIVE)
+  createdById String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  invoices  Invoice[]
+  quotations Quotation[]
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, name])
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  workspaceId   String
+  clientId      String
+  number        String
+  status        InvoiceStatus @default(DRAFT)
+  issueDate     DateTime      @default(now())
+  dueDate       DateTime
+  subtotalCents BigInt        @default(0)
+  discountCents BigInt        @default(0)
+  taxCents      BigInt        @default(0)
+  totalCents    BigInt        @default(0)
+  currency      String        @default("USD")
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id])
+  client    Client          @relation(fields: [clientId], references: [id])
+  lines     InvoiceLine[]
+  payments  Payment[]
+
+  @@unique([workspaceId, number])
+  @@index([workspaceId, status])
+  @@index([clientId])
+}
+
+model InvoiceLine {
+  id             String @id @default(cuid())
+  invoiceId      String
+  description    String
+  quantity       Decimal @db.Decimal(12, 3)
+  unitPriceCents BigInt
+  totalCents     BigInt
+  position       Int    @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
+
+model Quotation {
+  id                String           @id @default(cuid())
+  workspaceId       String
+  clientId          String
+  number            String
+  status            QuotationStatus  @default(DRAFT)
+  issueDate         DateTime         @default(now())
+  expiryDate        DateTime
+  subtotalCents     BigInt           @default(0)
+  discountCents     BigInt           @default(0)
+  taxCents          BigInt           @default(0)
+  totalCents        BigInt           @default(0)
+  currency          String           @default("USD")
+  convertedInvoiceId String?
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id])
+  client    Client         @relation(fields: [clientId], references: [id])
+  lines     QuotationLine[]
+
+  @@unique([workspaceId, number])
+  @@index([workspaceId, status])
+  @@index([clientId])
+}
+
+model QuotationLine {
+  id              String @id @default(cuid())
+  quotationId     String
+  description     String
+  quantity        Decimal @db.Decimal(12, 3)
+  unitPriceCents  BigInt
+  totalCents      BigInt
+  position        Int    @default(0)
+
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  workspaceId  String
+  invoiceId    String
+  amountCents  BigInt
+  currency     String        @default("USD")
+  method       PaymentMethod
+  status       PaymentStatus @default(COMPLETED)
+  reference    String?
+  paidAt       DateTime      @default(now())
+  createdAt    DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  invoice   Invoice   @relation(fields: [invoiceId], references: [id])
+
+  @@index([workspaceId, paidAt])
+  @@index([invoiceId])
 }
