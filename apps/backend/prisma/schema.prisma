@@ -1,0 +1,188 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// CRM+ERP — multi-tenant spine.
+// Conventions:
+//   - cuid string ids everywhere (portable, no id guessing).
+//   - Organization = ownership/billing unit; Workspace = data partition within it.
+//   - Every workspace-scoped row (added in later modules) MUST carry `workspaceId`.
+//   - Soft delete via `deletedAt` on human/org-facing entities.
+//   - AuditLog is append-only and never hard-deleted.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+enum OrganizationPlan {
+  FREE
+  STARTUP
+  ENTERPRISE
+}
+
+// ── Identity ─────────────────────────────────────────────────────────────────
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  memberships   Membership[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[] @relation("AuditActor")
+  ownedOrganizations Organization[]
+
+  @@index([status])
+}
+
+model Organization {
+  id      String           @id @default(cuid())
+  name    String
+  slug    String           @unique
+  plan    OrganizationPlan @default(FREE)
+  ownerId String
+  owner   User             @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  workspaces  Workspace[]
+  memberships Membership[]
+  auditLogs   AuditLog[]
+
+  @@index([ownerId])
+}
+
+// Links a user to an organization under a role. Unique per (user, org):
+// a user has exactly one role per organization.
+model Membership {
+  id             String @id @default(cuid())
+  userId         String
+  organizationId String
+  roleId         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// Data partition inside an organization. Later modules attach rows here.
+model Workspace {
+  id             String @id @default(cuid())
+  organizationId String
+  name           String
+  slug           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+}
+
+// ── RBAC ─────────────────────────────────────────────────────────────────────
+
+// organizationId NULL ⇒ system-seeded role (Owner/Admin/Member) available to all
+// organizations. organizationId set ⇒ org-custom role.
+model Role {
+  id             String  @id @default(cuid())
+  name           String
+  organizationId String?
+  isSystem       Boolean @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  memberships Membership[]
+  permissions  RolePermission[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+model Permission {
+  id          String  @id @default(cuid())
+  key         String  @unique // e.g. "clients:read", "invoices:write"
+  description String?
+
+  roles RolePermission[]
+
+  @@index([key])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+// Refresh-token rotation: each issued refresh token is hashed at rest and
+// single-use (revokedAt set on rotation). Enables detection of token reuse.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  ip        String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ── Audit ────────────────────────────────────────────────────────────────────
+
+// Append-only audit trail. `action` follows "<domain>.<verb>" (e.g. user.login).
+model AuditLog {
+  id             String   @id @default(cuid())
+  actorId        String?
+  organizationId String?
+  action         String
+  targetType     String
+  targetId       String?
+  metadata       Json     @default("{}")
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  actor        User?         @relation("AuditActor", fields: [actorId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([actorId])
+  @@index([action])
+}
