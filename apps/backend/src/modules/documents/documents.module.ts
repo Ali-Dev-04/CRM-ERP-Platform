@@ -7,5 +7,6 @@ import { OrganizationsModule } from '../organizations/organizations.module';
   imports: [OrganizationsModule],
   controllers: [DocumentsController],
   providers: [DocumentsService],
+  exports: [DocumentsService],
 })
 export class DocumentsModule {}

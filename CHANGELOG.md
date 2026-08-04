@@ -2,6 +2,21 @@
 
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.0] — 2026-08-04 — Milestone 5 (Platform modules + jobs)
+
+### Added
+- Platform data model: `Notification`, `Announcement`, `KnowledgeArticle`.
+- File management: S3-compatible storage (MinIO in dev) with presigned
+  upload/download URLs — file bytes never traverse the API. 25 MB cap.
+- Knowledge base: article CRUD + title/content search.
+- Notifications: user-scoped in-app feed, unread count, mark-read/all.
+- Announcements: workspace posts with publish workflow (org managers).
+- Analytics: workspace KPIs (counts, task completion, finance) + monthly
+  revenue report.
+- BullMQ maintenance queue with a scheduled hourly job pruning expired
+  refresh tokens.
+- Fixed a DI bug (DocumentsService not exported) surfaced by the wiring test.
+
 ## [0.4.0] — 2026-08-04 — Milestone 4 (ERP / HR)
 
 ### Added

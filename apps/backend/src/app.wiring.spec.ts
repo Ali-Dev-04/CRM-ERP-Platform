@@ -7,6 +7,7 @@ import { PrismaService } from './infrastructure/prisma/prisma.service';
 import { REDIS_CLIENT } from './infrastructure/redis/redis.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { RbacBootstrapService } from './modules/rbac/rbac-bootstrap.service';
+import { TokenPruneProcessor } from './infrastructure/queue/token-prune.processor';
 
 /**
  * Wiring smoke test: boots the entire AppModule with the DB and Redis
@@ -34,6 +35,8 @@ describe('AppModule wiring (no DB)', () => {
       .useValue({ ping: jest.fn().mockResolvedValue('PONG'), quit: jest.fn() })
       .overrideProvider(RbacBootstrapService)
       .useValue({})
+      .overrideProvider(TokenPruneProcessor)
+      .useValue({}) // avoid the BullMQ queue.add that needs live Redis
       .compile();
 
     app = moduleRef.createNestApplication();

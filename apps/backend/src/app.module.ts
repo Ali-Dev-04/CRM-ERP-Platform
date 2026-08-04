@@ -6,6 +6,8 @@ import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
+import { StorageModule } from './infrastructure/storage/storage.module';
+import { QueueModule } from './infrastructure/queue/queue.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -22,6 +24,11 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { LeavesModule } from './modules/leaves/leaves.module';
 import { AssetsModule } from './modules/assets/assets.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { FilesModule } from './modules/files/files.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AnnouncementsModule } from './modules/announcements/announcements.module';
+import { KnowledgeModule } from './modules/knowledge/knowledge.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
@@ -34,6 +41,8 @@ import { PermissionsGuard } from './modules/rbac/permissions.guard';
     ConfigModule,
     PrismaModule,
     RedisModule,
+    StorageModule,
+    QueueModule,
     AuditModule,
     RbacModule,
     ThrottlerModule.forRootAsync({
@@ -59,6 +68,11 @@ import { PermissionsGuard } from './modules/rbac/permissions.guard';
     LeavesModule,
     AssetsModule,
     DocumentsModule,
+    FilesModule,
+    NotificationsModule,
+    AnnouncementsModule,
+    KnowledgeModule,
+    AnalyticsModule,
     HealthModule,
   ],
   providers: [
