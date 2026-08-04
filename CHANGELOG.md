@@ -2,6 +2,17 @@
 
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.6.0] — 2026-08-04 — Milestone 6 (AI layer)
+
+### Added
+- OpenAI-compatible AI gateway with graceful, clearly-labelled mock fallback
+  when no provider is configured (works in dev/CI without credentials).
+- Nine AI features, each grounded in real workspace data: AI project manager,
+  task generator, meeting summary, client email writer, proposal generator,
+  weekly report, financial summary, search assistant, and natural-language
+  dashboard queries.
+- Every AI endpoint is permission-gated and returns `{ content, model, mocked }`.
+
 ## [0.5.0] — 2026-08-04 — Milestone 5 (Platform modules + jobs)
 
 ### Added

@@ -29,6 +29,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AiModule } from './modules/ai/ai.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
@@ -73,6 +74,7 @@ import { PermissionsGuard } from './modules/rbac/permissions.guard';
     AnnouncementsModule,
     KnowledgeModule,
     AnalyticsModule,
+    AiModule,
     HealthModule,
   ],
   providers: [
