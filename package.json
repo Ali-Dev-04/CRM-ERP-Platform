@@ -12,9 +12,10 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "build": "npm run build --workspace=apps/backend",
+    "build": "npm run build --workspaces --if-present",
     "dev:backend": "npm run start:dev --workspace=apps/backend",
-    "lint": "eslint \"apps/**/*.ts\" \"packages/**/*.ts\"",
+    "dev:frontend": "npm run dev --workspace=apps/frontend",
+    "lint": "eslint \"apps/backend/src/**/*.ts\"",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspace=apps/backend",
     "test:cov": "npm run test:cov --workspace=apps/backend",

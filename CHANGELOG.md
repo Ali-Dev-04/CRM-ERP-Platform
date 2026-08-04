@@ -2,6 +2,18 @@
 
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.0] — 2026-08-04 — Milestone 7 (Frontend)
+
+### Added
+- Next.js (App Router) + TypeScript + TailwindCSS + shadcn-style UI primitives
+  (button, input, card, table, badge).
+- API client with token storage and single-retry auto-refresh on 401.
+- Auth context: login, register, logout, active-org + active-workspace tracking.
+- App shell with sidebar navigation and organization switcher; auth-guarded.
+- Screens: dashboard (analytics KPIs), clients, projects (kanban board),
+  invoices, analytics (revenue chart), knowledge, notifications, calendar.
+- `/api/*` dev proxy to the backend (next.config rewrites).
+
 ## [0.6.0] — 2026-08-04 — Milestone 6 (AI layer)
 
 ### Added
