@@ -2,6 +2,19 @@
 
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] — 2026-08-04 — Milestone 4 (ERP / HR)
+
+### Added
+- HR data model: `Employee`, `Attendance`, `Leave`, `Asset`, `Document` + enums.
+- Employees module: CRUD, soft-delete/terminate, status filter.
+- Attendance module: clock-in/clock-out (one record per employee per day,
+  work-minutes computed), history.
+- Leaves module: request + approve/reject workflow with approver tracking.
+- Assets module: CRUD + assign/unassign to employees, retire.
+- Documents module: metadata registration (bytes stored in S3 via M5; never
+  in Postgres).
+- All routes org+workspace scoped and permission-gated.
+
 ## [0.3.0] — 2026-08-04 — Milestone 3 (Project management)
 
 ### Added

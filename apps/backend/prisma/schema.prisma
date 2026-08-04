@@ -98,6 +98,45 @@ enum TaskPriority {
   URGENT
 }
 
+// ── HR / ERP enums ───────────────────────────────────────────────────────────
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  TERMINATED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  REMOTE
+  LEAVE
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  CASUAL
+  UNPAID
+  MATERNITY
+  PATERNITY
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AssetStatus {
+  AVAILABLE
+  ASSIGNED
+  IN_REPAIR
+  RETIRED
+}
+
 // ── Identity ─────────────────────────────────────────────────────────────────
 
 model User {
@@ -121,6 +160,7 @@ model User {
   createdTasks     Task[]      @relation("TaskCreator")
   createdMeetings  Meeting[]   @relation("MeetingCreator")
   meetingAttendances MeetingAttendee[]
+  employeeProfile  Employee?  @relation("EmployeeUser")
 
   @@index([status])
 }
@@ -180,6 +220,9 @@ model Workspace {
   payments   Payment[]
   projects   Project[]
   meetings   Meeting[]
+  employees  Employee[]
+  assets     Asset[]
+  documents  Document[]
 
   @@unique([organizationId, slug])
   @@index([organizationId])
@@ -472,4 +515,105 @@ model MeetingAttendee {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([meetingId, userId])
+}
+
+// ── HR / ERP ─────────────────────────────────────────────────────────────────
+
+model Employee {
+  id           String         @id @default(cuid())
+  workspaceId  String
+  userId       String?        @unique
+  firstName    String
+  lastName     String
+  email        String
+  jobTitle     String?
+  department   String?
+  hireDate     DateTime?
+  status       EmployeeStatus @default(ACTIVE)
+  salaryCents  BigInt?
+  currency     String         @default("USD")
+  phone        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  deletedAt    DateTime?
+
+  workspace    Workspace      @relation(fields: [workspaceId], references: [id])
+  user         User?          @relation("EmployeeUser", fields: [userId], references: [id])
+  attendance   Attendance[]
+  leaves       Leave[]
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId, status])
+}
+
+model Attendance {
+  id          String           @id @default(cuid())
+  employeeId  String
+  date        DateTime
+  clockIn     DateTime?
+  clockOut    DateTime?
+  status      AttendanceStatus @default(PRESENT)
+  workMinutes Int?
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([employeeId, date])
+}
+
+model Leave {
+  id          String      @id @default(cuid())
+  employeeId  String
+  type        LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  status      LeaveStatus @default(PENDING)
+  reason      String?
+  approverId  String?
+  approvedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, status])
+  @@index([status])
+}
+
+model Asset {
+  id            String      @id @default(cuid())
+  workspaceId   String
+  name          String
+  serialNumber  String?
+  category      String?
+  status        AssetStatus @default(AVAILABLE)
+  valueCents    BigInt?
+  currency      String      @default("USD")
+  assignedToEmployeeId String?
+  purchaseDate  DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, serialNumber])
+  @@index([workspaceId, status])
+}
+
+model Document {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  name         String
+  storageKey   String
+  mimeType     String
+  sizeBytes    BigInt
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId, createdAt])
 }

@@ -28,6 +28,21 @@ CREATE TYPE "TaskStatus" AS ENUM ('TODO', 'IN_PROGRESS', 'IN_REVIEW', 'BLOCKED',
 -- CreateEnum
 CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
 
+-- CreateEnum
+CREATE TYPE "EmployeeStatus" AS ENUM ('ACTIVE', 'ON_LEAVE', 'TERMINATED');
+
+-- CreateEnum
+CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'HALF_DAY', 'REMOTE', 'LEAVE');
+
+-- CreateEnum
+CREATE TYPE "LeaveType" AS ENUM ('ANNUAL', 'SICK', 'CASUAL', 'UNPAID', 'MATERNITY', 'PATERNITY');
+
+-- CreateEnum
+CREATE TYPE "LeaveStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "AssetStatus" AS ENUM ('AVAILABLE', 'ASSIGNED', 'IN_REPAIR', 'RETIRED');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -307,6 +322,93 @@ CREATE TABLE "MeetingAttendee" (
     CONSTRAINT "MeetingAttendee_pkey" PRIMARY KEY ("meetingId","userId")
 );
 
+-- CreateTable
+CREATE TABLE "Employee" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "userId" TEXT,
+    "firstName" TEXT NOT NULL,
+    "lastName" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "jobTitle" TEXT,
+    "department" TEXT,
+    "hireDate" TIMESTAMP(3),
+    "status" "EmployeeStatus" NOT NULL DEFAULT 'ACTIVE',
+    "salaryCents" BIGINT,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "phone" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+
+    CONSTRAINT "Employee_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Attendance" (
+    "id" TEXT NOT NULL,
+    "employeeId" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "clockIn" TIMESTAMP(3),
+    "clockOut" TIMESTAMP(3),
+    "status" "AttendanceStatus" NOT NULL DEFAULT 'PRESENT',
+    "workMinutes" INTEGER,
+    "notes" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Attendance_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Leave" (
+    "id" TEXT NOT NULL,
+    "employeeId" TEXT NOT NULL,
+    "type" "LeaveType" NOT NULL,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "status" "LeaveStatus" NOT NULL DEFAULT 'PENDING',
+    "reason" TEXT,
+    "approverId" TEXT,
+    "approvedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Leave_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Asset" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "serialNumber" TEXT,
+    "category" TEXT,
+    "status" "AssetStatus" NOT NULL DEFAULT 'AVAILABLE',
+    "valueCents" BIGINT,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "assignedToEmployeeId" TEXT,
+    "purchaseDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Asset_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Document" (
+    "id" TEXT NOT NULL,
+    "workspaceId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "storageKey" TEXT NOT NULL,
+    "mimeType" TEXT NOT NULL,
+    "sizeBytes" BIGINT NOT NULL,
+    "uploadedById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Document_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
@@ -412,6 +514,36 @@ CREATE INDEX "Meeting_workspaceId_scheduledAt_idx" ON "Meeting"("workspaceId", "
 -- CreateIndex
 CREATE INDEX "Meeting_projectId_idx" ON "Meeting"("projectId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Employee_userId_key" ON "Employee"("userId");
+
+-- CreateIndex
+CREATE INDEX "Employee_workspaceId_status_idx" ON "Employee"("workspaceId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Employee_workspaceId_email_key" ON "Employee"("workspaceId", "email");
+
+-- CreateIndex
+CREATE INDEX "Attendance_employeeId_date_idx" ON "Attendance"("employeeId", "date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Attendance_employeeId_date_key" ON "Attendance"("employeeId", "date");
+
+-- CreateIndex
+CREATE INDEX "Leave_employeeId_status_idx" ON "Leave"("employeeId", "status");
+
+-- CreateIndex
+CREATE INDEX "Leave_status_idx" ON "Leave"("status");
+
+-- CreateIndex
+CREATE INDEX "Asset_workspaceId_status_idx" ON "Asset"("workspaceId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Asset_workspaceId_serialNumber_key" ON "Asset"("workspaceId", "serialNumber");
+
+-- CreateIndex
+CREATE INDEX "Document_workspaceId_createdAt_idx" ON "Document"("workspaceId", "createdAt");
+
 -- AddForeignKey
 ALTER TABLE "Organization" ADD CONSTRAINT "Organization_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -498,4 +630,22 @@ ALTER TABLE "MeetingAttendee" ADD CONSTRAINT "MeetingAttendee_meetingId_fkey" FO
 
 -- AddForeignKey
 ALTER TABLE "MeetingAttendee" ADD CONSTRAINT "MeetingAttendee_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Employee" ADD CONSTRAINT "Employee_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Employee" ADD CONSTRAINT "Employee_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Attendance" ADD CONSTRAINT "Attendance_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Leave" ADD CONSTRAINT "Leave_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Asset" ADD CONSTRAINT "Asset_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Document" ADD CONSTRAINT "Document_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 

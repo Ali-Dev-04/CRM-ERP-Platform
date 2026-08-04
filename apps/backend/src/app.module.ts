@@ -17,6 +17,11 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { MeetingsModule } from './modules/meetings/meetings.module';
+import { EmployeesModule } from './modules/employees/employees.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { LeavesModule } from './modules/leaves/leaves.module';
+import { AssetsModule } from './modules/assets/assets.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
@@ -49,6 +54,11 @@ import { PermissionsGuard } from './modules/rbac/permissions.guard';
     ProjectsModule,
     TasksModule,
     MeetingsModule,
+    EmployeesModule,
+    AttendanceModule,
+    LeavesModule,
+    AssetsModule,
+    DocumentsModule,
     HealthModule,
   ],
   providers: [
