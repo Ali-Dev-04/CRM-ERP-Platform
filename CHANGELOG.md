@@ -2,6 +2,19 @@
 
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] — 2026-08-04 — Milestone 3 (Project management)
+
+### Added
+- PM data model: `Project`, `Task`, `Meeting`, `MeetingAttendee` + enums
+  (ProjectStatus, TaskStatus, TaskPriority).
+- Projects module: CRUD, soft-delete, status filter, task counts.
+- Tasks module: CRUD with kanban ordering; `move` endpoint reorders a column
+  transactionally (integer positions, no float drift), supports status change
+  + index placement with clamp.
+- Meetings module: CRUD with attendees (many-to-many).
+- Calendar aggregation endpoint: meetings + tasks (by due date) in a date range.
+- Unit tests for kanban move/reorder logic.
+
 ## [0.2.0] — 2026-08-04 — Milestone 2 (CRM domain)
 
 ### Added

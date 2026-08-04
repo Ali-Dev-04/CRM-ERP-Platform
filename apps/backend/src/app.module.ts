@@ -14,6 +14,9 @@ import { ClientsModule } from './modules/clients/clients.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { QuotationsModule } from './modules/quotations/quotations.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { ProjectsModule } from './modules/projects/projects.module';
+import { TasksModule } from './modules/tasks/tasks.module';
+import { MeetingsModule } from './modules/meetings/meetings.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
@@ -43,6 +46,9 @@ import { PermissionsGuard } from './modules/rbac/permissions.guard';
     InvoicesModule,
     QuotationsModule,
     PaymentsModule,
+    ProjectsModule,
+    TasksModule,
+    MeetingsModule,
     HealthModule,
   ],
   providers: [
