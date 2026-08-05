@@ -24,12 +24,18 @@ export class TokenPruneProcessor extends WorkerHost {
 
   async onModuleInit(): Promise<void> {
     // Idempotent: BullMQ dedupes repeatable jobs by key (name + pattern).
-    await this.queue.add(
-      PRUNE_JOB,
-      {},
-      { repeat: { pattern: EVERY_HOUR }, removeOnComplete: true, removeOnFail: 100 },
-    );
-    this.logger.log(`Scheduled '${PRUNE_JOB}' (${EVERY_HOUR})`);
+    // Non-fatal: if Redis is unavailable at boot, the app still starts; the
+    // worker will reconnect and the job registers on the next restart.
+    try {
+      await this.queue.add(
+        PRUNE_JOB,
+        {},
+        { repeat: { pattern: EVERY_HOUR }, removeOnComplete: true, removeOnFail: 100 },
+      );
+      this.logger.log(`Scheduled '${PRUNE_JOB}' (${EVERY_HOUR})`);
+    } catch (err) {
+      this.logger.warn(`Could not schedule '${PRUNE_JOB}' (Redis unavailable?): ${(err as Error).message}`);
+    }
   }
 
   async process(job: { name: string }): Promise<void> {
