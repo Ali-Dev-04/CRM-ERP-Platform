@@ -2,6 +2,22 @@
 
 All notable changes to this project. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.8.0] — 2026-08-04 — Milestone 8 (Hardening & ops)
+
+### Added
+- Frontend production Dockerfile (multi-stage, non-root, healthcheck).
+- NGINX reverse proxy (TLS-ready, security headers, rate limiting, /api→backend,
+  /→frontend).
+- Full-stack production compose (`deploy/docker-compose.prod.yml`) wiring
+  postgres, redis, minio, backend, frontend, nginx.
+- `deploy/backup.sh` (custom-format `pg_dump`, gzipped, retention) and
+  `deploy/deploy.sh` (up/down/migrate/logs).
+- `perf/k6-load.js` load test with thresholds.
+- Docs: `database.md`, `security.md`, ADR-0002 (tenancy + money).
+- README updated for full-stack run + implemented-module inventory.
+- System-wide gate green: backend typecheck/lint/build + 28 tests; frontend
+  typecheck/build (12 routes).
+
 ## [0.7.0] — 2026-08-04 — Milestone 7 (Frontend)
 
 ### Added

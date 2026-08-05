@@ -9,6 +9,10 @@ build/
 *.tsbuildinfo
 .next/
 out/
+**/next-env.d.ts
+
+# Backups (deploy/backup.sh)
+backups/
 
 # Environment
 .env
