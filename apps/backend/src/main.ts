@@ -1,4 +1,7 @@
 import 'reflect-metadata';
+import { config as loadEnv } from 'dotenv';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -7,6 +10,17 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ConfigService } from './config/config.service';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+
+// Load .env: backend dir first, else the monorepo root. Uses __dirname so it
+// resolves the same whether running from `src` (ts-node dev) or `dist` (built).
+// Existing env vars win — safe for prod containers where env is injected.
+for (const rel of ['../.env', '../../../.env']) {
+  const p = resolve(__dirname, rel);
+  if (existsSync(p)) {
+    loadEnv({ path: p });
+    break;
+  }
+}
 
 /**
  * Process entrypoint. Keeps wiring minimal: bootstrap, global pipes/filters,

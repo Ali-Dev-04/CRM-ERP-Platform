@@ -6,6 +6,10 @@ import { z } from 'zod';
  * loud, never run misconfigured in production.
  */
 const intString = z.coerce.number().int().positive();
+// Treat a blank string as "unset" so optional vars left empty in .env don't
+// fail validation (e.g. AI_API_BASE_URL= with no value).
+const optionalStr = z.preprocess((v) => (v === '' ? undefined : v), z.string().optional());
+const optionalUrl = z.preprocess((v) => (v === '' ? undefined : v), z.string().url().optional());
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -28,15 +32,15 @@ export const envSchema = z.object({
   RATE_LIMIT_TTL: intString.default(60),
   RATE_LIMIT_LIMIT: intString.default(120),
 
-  S3_ENDPOINT: z.string().url().optional(),
+  S3_ENDPOINT: optionalUrl,
   S3_REGION: z.string().default('us-east-1'),
   S3_BUCKET: z.string().default('crm-erp-files'),
-  S3_ACCESS_KEY_ID: z.string().optional(),
-  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_ACCESS_KEY_ID: optionalStr,
+  S3_SECRET_ACCESS_KEY: optionalStr,
 
-  AI_API_BASE_URL: z.string().url().optional(),
-  AI_API_KEY: z.string().optional(),
-  AI_MODEL: z.string().optional(),
+  AI_API_BASE_URL: optionalUrl,
+  AI_API_KEY: optionalStr,
+  AI_MODEL: optionalStr,
 });
 
 export type Env = z.infer<typeof envSchema>;
