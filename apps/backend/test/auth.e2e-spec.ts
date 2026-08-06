@@ -70,7 +70,7 @@ describeIfDb('Auth flow (e2e)', () => {
     await request(app.getHttpServer())
       .post('/auth/logout')
       .send({ refreshToken: refreshed.body.refreshToken })
-      .expect(201);
+      .expect(200);
   });
 
   it('rejects wrong credentials with a generic error', async () => {

@@ -1,7 +1,7 @@
 import { InjectQueue, OnQueueEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import { MAINTENANCE_QUEUE } from './queue.module';
+import { MAINTENANCE_QUEUE } from './queue.constants';
 import { TokenService } from '../../modules/auth/token.service';
 
 const PRUNE_JOB = 'token-prune';

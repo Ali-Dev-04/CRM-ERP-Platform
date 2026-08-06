@@ -5,8 +5,7 @@ import { ConfigModule } from '../../config/config.module';
 import { ConfigService } from '../../config/config.service';
 import { TokenPruneProcessor } from './token-prune.processor';
 import { AuthModule } from '../../modules/auth/auth.module';
-
-export const MAINTENANCE_QUEUE = 'maintenance';
+import { MAINTENANCE_QUEUE } from './queue.constants';
 
 /**
  * Background jobs via BullMQ over Redis. Currently runs one repeating job —
