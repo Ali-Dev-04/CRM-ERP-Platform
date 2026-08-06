@@ -13,6 +13,7 @@
     "types": ["node", "jest"],
     "strictPropertyInitialization": false,
     "isolatedModules": true,
+    "incremental": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "exactOptionalPropertyTypes": false
