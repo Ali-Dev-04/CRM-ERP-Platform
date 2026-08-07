@@ -1,7 +1,0 @@
-# Local verification override (auto-merged by `docker compose`).
-# Remaps the Postgres host port to 5434 to avoid clashing with an existing
-# local Postgres already bound to 5432. Not used in production.
-services:
-  postgres:
-    ports:
-      - "5434:5432"
