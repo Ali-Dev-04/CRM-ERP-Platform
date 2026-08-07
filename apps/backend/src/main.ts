@@ -11,6 +11,17 @@ import { AppModule } from './app.module';
 import { ConfigService } from './config/config.service';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
+// Prisma stores money as BigInt; JSON can't serialize BigInt by default.
+// Serialize all BigInt as a string (our documented "cents as strings" rule).
+declare global {
+  interface BigInt {
+    toJSON(): string;
+  }
+}
+BigInt.prototype.toJSON = function (): string {
+  return this.toString();
+};
+
 // Load .env: backend dir first, else the monorepo root. Uses __dirname so it
 // resolves the same whether running from `src` (ts-node dev) or `dist` (built).
 // Existing env vars win — safe for prod containers where env is injected.
