@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "dev": "npm run infra:up && concurrently -k -n api,web -c cyan,magenta \"npm:dev:backend\" \"npm:dev:frontend\"",
     "dev:backend": "npm run start:dev --workspace=apps/backend",
     "dev:frontend": "npm run dev --workspace=apps/frontend",
     "lint": "eslint \"apps/backend/src/**/*.ts\"",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
+    "concurrently": "^10.0.4",
     "eslint": "^9.18.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.3",
