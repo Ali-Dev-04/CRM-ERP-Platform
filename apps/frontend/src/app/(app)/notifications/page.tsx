@@ -1,8 +1,11 @@
 'use client';
 
+import { Bell, Check } from 'lucide-react';
 import { useApi } from '@/lib/use-api';
 import { formatDate } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeader } from '@/components/page-header';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton, EmptyState } from '@/components/ui/skeleton';
 
 interface Notification {
   id: string;
@@ -17,23 +20,32 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Notifications</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Inbox</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {loading && <p className="text-muted-foreground">Loading…</p>}
-          {data && data.length === 0 && <p className="text-sm text-muted-foreground">No notifications.</p>}
-          {data?.map((n) => (
-            <div key={n.id} className={`rounded-md border p-3 ${n.readAt ? 'opacity-60' : 'bg-muted/30'}`}>
-              <div className="flex items-center justify-between">
-                <p className="font-medium">{n.title}</p>
-                <span className="text-xs text-muted-foreground">{formatDate(n.createdAt)}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">{n.message}</p>
-            </div>
-          ))}
+      <PageHeader title="Notifications" subtitle="Your recent activity and alerts." />
+
+      <Card className="card-elevated">
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="space-y-3 p-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
+          ) : data && data.length > 0 ? (
+            <ul className="divide-y divide-border">
+              {data.map((n) => (
+                <li key={n.id} className={`flex items-start gap-3 p-4 ${n.readAt ? 'opacity-60' : ''}`}>
+                  <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${n.readAt ? 'bg-muted text-muted-foreground' : 'brand-gradient text-white'}`}>
+                    {n.readAt ? <Check className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium">{n.title}</p>
+                      <span className="shrink-0 text-xs text-muted-foreground">{formatDate(n.createdAt)}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{n.message}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState icon={<Bell className="h-5 w-5" />} title="You're all caught up" hint="New notifications will show here." />
+          )}
         </CardContent>
       </Card>
     </div>

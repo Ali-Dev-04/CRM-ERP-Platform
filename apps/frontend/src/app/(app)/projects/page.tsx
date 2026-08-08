@@ -1,33 +1,29 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { FolderKanban, Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/use-api';
 import { wsPath } from '@/lib/urls';
 import { cn } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge, Td, Th } from '@/components/ui/data';
+import { PageHeader } from '@/components/page-header';
+import { Card, CardContent } from '@/components/ui/card';
+import { StatusPill } from '@/components/ui/status-pill';
+import { Skeleton, EmptyState } from '@/components/ui/skeleton';
 import type { Paginated, Project, Task } from '@/lib/types';
 
-const COLUMNS: { key: Task['status']; label: string }[] = [
-  { key: 'TODO', label: 'To do' },
-  { key: 'IN_PROGRESS', label: 'In progress' },
-  { key: 'IN_REVIEW', label: 'In review' },
-  { key: 'BLOCKED', label: 'Blocked' },
-  { key: 'DONE', label: 'Done' },
+const COLUMNS: { key: Task['status']; label: string; dot: string }[] = [
+  { key: 'TODO', label: 'To do', dot: 'bg-muted-foreground' },
+  { key: 'IN_PROGRESS', label: 'In progress', dot: 'bg-info' },
+  { key: 'IN_REVIEW', label: 'In review', dot: 'bg-warning' },
+  { key: 'BLOCKED', label: 'Blocked', dot: 'bg-danger' },
+  { key: 'DONE', label: 'Done', dot: 'bg-success' },
 ];
-
-const PRIORITY_TONE: Record<string, string> = {
-  LOW: 'text-muted-foreground',
-  MEDIUM: 'text-blue-600',
-  HIGH: 'text-amber-600',
-  URGENT: 'text-red-600',
-};
 
 export default function ProjectsPage() {
   const { activeOrgId, activeWorkspaceId } = useAuth();
-  const projectsPath = wsPath(activeOrgId, activeWorkspaceId, '/projects?size=50');
-  const { data: projectsData } = useApi<Paginated<Project>>(projectsPath);
+  const base = wsPath(activeOrgId, activeWorkspaceId, '');
+  const { data: projectsData } = useApi<Paginated<Project>>(base ? `${base}/projects?size=50` : null);
   const projects = useMemo(() => projectsData?.items ?? [], [projectsData]);
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -35,7 +31,7 @@ export default function ProjectsPage() {
     if (!selected && projects.length > 0) setSelected(projects[0]!.id);
   }, [projects, selected]);
 
-  const tasksPath = selected ? wsPath(activeOrgId, activeWorkspaceId, `/projects/${selected}/tasks`) : null;
+  const tasksPath = selected && base ? `${base}/projects/${selected}/tasks` : null;
   const { data: tasks, loading } = useApi<Task[]>(tasksPath);
 
   const byColumn = useMemo(() => {
@@ -47,66 +43,78 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Projects</h1>
+      <PageHeader title="Projects" subtitle="Plan work and move tasks across the board." />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Select project</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {projects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No projects yet.</p>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <Th>Name</Th>
-                    <Th>Status</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {projects.map((p) => (
-                    <tr
-                      key={p.id}
-                      className={cn('cursor-pointer border-t', selected === p.id && 'bg-muted')}
-                      onClick={() => setSelected(p.id)}
-                    >
-                      <Td className="font-medium">{p.name}</Td>
-                      <Td><Badge>{p.status.replace(/_/g, ' ').toLowerCase()}</Badge></Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Project picker */}
+      {projects.length === 0 ? (
+        <Card className="card-elevated">
+          <CardContent className="p-0">
+            <EmptyState icon={<FolderKanban className="h-5 w-5" />} title="No projects yet" hint="Create a project to start organising tasks." />
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((p) => {
+            const active = selected === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setSelected(p.id)}
+                className={cn(
+                  'rounded-xl border p-4 text-left transition-all',
+                  active ? 'border-primary bg-primary-soft shadow-soft' : 'border-border bg-card hover:border-primary/40 hover:shadow-sm',
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{p.name}</span>
+                  <span className={cn('h-2.5 w-2.5 rounded-full', active ? 'bg-primary' : 'bg-muted-foreground/30')} />
+                </div>
+                <div className="mt-3"><StatusPill status={p.status} /></div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
+      {/* Board */}
       {selected && (
         <div>
-          <h2 className="mb-3 text-lg font-semibold">Board</h2>
-          {loading && <p className="text-muted-foreground">Loading tasks…</p>}
-          <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
-            {COLUMNS.map((col) => (
-              <div key={col.key} className="rounded-lg border bg-muted/20">
-                <div className="border-b px-3 py-2 text-sm font-medium">
-                  {col.label} <span className="text-muted-foreground">({byColumn[col.key]?.length ?? 0})</span>
+          {loading ? (
+            <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+              {COLUMNS.map((c) => (
+                <Skeleton key={c.key} className="h-40" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
+              {COLUMNS.map((col) => (
+                <div key={col.key} className="rounded-xl border border-border bg-muted/30">
+                  <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+                    <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                      <span className={cn('h-2 w-2 rounded-full', col.dot)} />
+                      {col.label}
+                    </span>
+                    <span className="rounded-full bg-card px-2 py-0.5 text-xs text-muted-foreground">
+                      {byColumn[col.key]?.length ?? 0}
+                    </span>
+                  </div>
+                  <div className="space-y-2 p-2">
+                    {(byColumn[col.key] ?? []).map((t) => (
+                      <div key={t.id} className="rounded-lg border border-border bg-card p-3 shadow-sm transition-shadow hover:shadow-md">
+                        <p className="text-sm font-medium leading-snug">{t.title}</p>
+                        <div className="mt-2"><StatusPill status={t.priority} /></div>
+                      </div>
+                    ))}
+                    {(byColumn[col.key]?.length ?? 0) === 0 && (
+                      <div className="flex items-center justify-center rounded-lg border border-dashed border-border/70 py-4 text-xs text-muted-foreground">
+                        <Plus className="mr-1 h-3 w-3" /> Empty
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-2 p-2">
-                  {(byColumn[col.key] ?? []).map((t) => (
-                    <div key={t.id} className="rounded-md border bg-card p-2 text-sm shadow-sm">
-                      <p className="font-medium">{t.title}</p>
-                      <p className={cn('text-xs', PRIORITY_TONE[t.priority])}>{t.priority.toLowerCase()}</p>
-                    </div>
-                  ))}
-                  {(byColumn[col.key]?.length ?? 0) === 0 && (
-                    <p className="px-1 py-2 text-xs text-muted-foreground">Empty</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

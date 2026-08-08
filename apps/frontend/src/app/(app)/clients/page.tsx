@@ -1,18 +1,17 @@
 'use client';
 
+import { Users } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/use-api';
 import { wsPath } from '@/lib/urls';
 import { formatDate } from '@/lib/utils';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge, Table, Td, Th } from '@/components/ui/data';
+import { PageHeader } from '@/components/page-header';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, Th, Td } from '@/components/ui/data';
+import { StatusPill } from '@/components/ui/status-pill';
+import { Avatar } from '@/components/ui/avatar';
+import { TableSkeleton, EmptyState } from '@/components/ui/skeleton';
 import type { Client, Paginated } from '@/lib/types';
-
-const STATUS_TONE: Record<string, string> = {
-  ACTIVE: 'border-green-200 bg-green-50 text-green-700',
-  INACTIVE: 'border-muted bg-muted text-muted-foreground',
-  BLACKLISTED: 'border-red-200 bg-red-50 text-red-700',
-};
 
 export default function ClientsPage() {
   const { activeOrgId, activeWorkspaceId } = useAuth();
@@ -21,43 +20,45 @@ export default function ClientsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Clients</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>All clients</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading && <p className="text-muted-foreground">Loading…</p>}
-          {error && <p className="text-sm text-destructive">{error.message}</p>}
-          {data && (
+      <PageHeader title="Clients" subtitle="Manage your customer relationships." />
+
+      <Card className="card-elevated">
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-4">
+              <TableSkeleton rows={5} cols={4} />
+            </div>
+          ) : error ? (
+            <p className="p-6 text-sm text-danger">{error.message}</p>
+          ) : data && data.items.length > 0 ? (
             <Table
               head={
                 <tr>
-                  <Th>Name</Th>
+                  <Th>Client</Th>
                   <Th>Company</Th>
                   <Th>Email</Th>
                   <Th>Status</Th>
-                  <Th>Created</Th>
+                  <Th>Added</Th>
                 </tr>
               }
             >
               {data.items.map((c) => (
-                <tr key={c.id} className="border-t">
-                  <Td className="font-medium">{c.name}</Td>
-                  <Td>{c.company ?? '—'}</Td>
-                  <Td>{c.email ?? '—'}</Td>
+                <tr key={c.id} className="border-t transition-colors hover:bg-muted/40">
                   <Td>
-                    <Badge className={STATUS_TONE[c.status] ?? ''}>{c.status}</Badge>
+                    <div className="flex items-center gap-3">
+                      <Avatar name={c.name} size={32} />
+                      <span className="font-medium">{c.name}</span>
+                    </div>
                   </Td>
-                  <Td>{formatDate(c.createdAt)}</Td>
+                  <Td className="text-muted-foreground">{c.company ?? '—'}</Td>
+                  <Td className="text-muted-foreground">{c.email ?? '—'}</Td>
+                  <Td><StatusPill status={c.status} /></Td>
+                  <Td className="text-muted-foreground">{formatDate(c.createdAt)}</Td>
                 </tr>
               ))}
-              {data.items.length === 0 && (
-                <tr>
-                  <Td className="text-muted-foreground">No clients yet.</Td>
-                </tr>
-              )}
             </Table>
+          ) : (
+            <EmptyState icon={<Users className="h-5 w-5" />} title="No clients yet" hint="Clients you add will appear here." />
           )}
         </CardContent>
       </Card>
