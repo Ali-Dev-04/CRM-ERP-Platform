@@ -9,6 +9,11 @@ import {
   ClientStatus,
   PaymentMethod,
   PaymentStatus,
+  EmployeeStatus,
+  AttendanceStatus,
+  LeaveType,
+  LeaveStatus,
+  AssetStatus,
 } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PERMISSIONS, SYSTEM_ROLES } from '../src/modules/rbac/permissions';
@@ -84,6 +89,12 @@ async function main(): Promise<void> {
   await seedInvoicesAndPayments(workspace.id);
   await seedMeetings(workspace.id, user.id, org.id);
   await seedKnowledge(workspace.id, user.id);
+  const employees = await seedEmployees(workspace.id);
+  await seedAttendance(employees);
+  await seedLeaves(employees, user.id);
+  await seedAssets(workspace.id, employees);
+  await seedDocuments(workspace.id, user.id);
+  await seedAnnouncements(workspace.id, user.id);
   await seedNotifications(user.id, org.id);
 
   console.log(`\nSeed complete — login: ${email} / DemoPass12345  (org: ${org.slug})`);
@@ -100,6 +111,107 @@ async function seedClients(workspaceId: string, userId: string) {
   for (const c of clients) {
     const existing = await prisma.client.findFirst({ where: { workspaceId, email: c.email } });
     if (!existing) await prisma.client.create({ data: { ...c, workspaceId, createdById: userId } });
+  }
+}
+
+// ── Employees (so HR screens have data) ──────────────────────────────────────
+async function seedEmployees(
+  workspaceId: string,
+): Promise<{ id: string; firstName: string; lastName: string }[]> {
+  const defs = [
+    { firstName: 'Grace', lastName: 'Hopper', email: 'grace.hopper@acme.dev', jobTitle: 'Senior Engineer', department: 'Engineering', salaryCents: 13200000n, status: EmployeeStatus.ACTIVE, hire: monthsAgo(24) },
+    { firstName: 'Alan', lastName: 'Turing', email: 'alan.turing@acme.dev', jobTitle: 'Engineer', department: 'Engineering', salaryCents: 9500000n, status: EmployeeStatus.ACTIVE, hire: monthsAgo(12) },
+    { firstName: 'Marie', lastName: 'Curie', email: 'marie.curie@acme.dev', jobTitle: 'Research Lead', department: 'Research', salaryCents: 12000000n, status: EmployeeStatus.ACTIVE, hire: monthsAgo(36) },
+    { firstName: 'Nikola', lastName: 'Tesla', email: 'nikola.tesla@acme.dev', jobTitle: 'Operations Manager', department: 'Operations', salaryCents: 11000000n, status: EmployeeStatus.ON_LEAVE, hire: monthsAgo(48) },
+  ];
+  const out: { id: string; firstName: string; lastName: string }[] = [];
+  for (const d of defs) {
+    let e = await prisma.employee.findFirst({ where: { workspaceId, email: d.email } });
+    if (!e) {
+      e = await prisma.employee.create({
+        data: { workspaceId, firstName: d.firstName, lastName: d.lastName, email: d.email, jobTitle: d.jobTitle, department: d.department, salaryCents: d.salaryCents, currency: 'USD', status: d.status, hireDate: d.hire },
+      });
+    }
+    out.push({ id: e.id, firstName: e.firstName, lastName: e.lastName });
+  }
+  return out;
+}
+
+// ── Attendance history (clock-in/out for past days) ──────────────────────────
+async function seedAttendance(employees: { id: string; firstName: string; lastName: string }[]) {
+  const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+  const at = (day: Date, h: number, m: number) => new Date(new Date(day).setHours(h, m, 0, 0));
+  const targets = [employees[0], employees[1]].filter(Boolean) as { id: string }[];
+  for (const emp of targets) {
+    for (let i = 1; i <= 5; i++) {
+      const day = startOfDay(inDays(-i));
+      if (await prisma.attendance.findFirst({ where: { employeeId: emp.id, date: day } })) continue;
+      const remote = i % 3 === 0;
+      await prisma.attendance.create({
+        data: { employeeId: emp.id, date: day, clockIn: at(day, 9, 0), clockOut: at(day, 17, 15), workMinutes: 495, status: remote ? AttendanceStatus.REMOTE : AttendanceStatus.PRESENT },
+      });
+    }
+  }
+}
+
+// ── Leave requests (mix of pending/approved/rejected) ────────────────────────
+async function seedLeaves(employees: { id: string; firstName: string; lastName: string }[], approverId: string) {
+  const byName = (first: string) => employees.find((e) => e.firstName === first);
+  const defs = [
+    { who: byName('Grace'), type: LeaveType.ANNUAL, start: inDays(-30), end: inDays(-28), status: LeaveStatus.APPROVED, reason: 'Summer vacation' },
+    { who: byName('Alan'), type: LeaveType.SICK, start: inDays(3), end: inDays(4), status: LeaveStatus.PENDING, reason: 'Medical appointment' },
+    { who: byName('Marie'), type: LeaveType.CASUAL, start: inDays(-7), end: inDays(-7), status: LeaveStatus.REJECTED, reason: 'Personal errand' },
+    { who: byName('Nikola'), type: LeaveType.ANNUAL, start: inDays(-2), end: inDays(4), status: LeaveStatus.APPROVED, reason: 'Pre-approved time off' },
+  ];
+  for (const d of defs) {
+    if (!d.who) continue;
+    if (await prisma.leave.findFirst({ where: { employeeId: d.who.id, type: d.type, startDate: d.start } })) continue;
+    await prisma.leave.create({
+      data: { employeeId: d.who.id, type: d.type, startDate: d.start, endDate: d.end, status: d.status, reason: d.reason, approverId: d.status === LeaveStatus.PENDING ? null : approverId, approvedAt: d.status === LeaveStatus.PENDING ? null : new Date() },
+    });
+  }
+}
+
+// ── Assets (some assigned) ───────────────────────────────────────────────────
+async function seedAssets(workspaceId: string, employees: { id: string; firstName: string }[]) {
+  const byName = (first: string) => employees.find((e) => e.firstName === first)?.id ?? null;
+  const defs = [
+    { name: 'MacBook Pro 16"', serial: 'MBP-1024', category: 'Laptops', value: 280000n, status: AssetStatus.ASSIGNED, assignee: byName('Grace') },
+    { name: 'Dell 27" Monitor', serial: 'DEL-5521', category: 'Monitors', value: 40000n, status: AssetStatus.ASSIGNED, assignee: byName('Alan') },
+    { name: 'iPhone 15', serial: 'IPH-7782', category: 'Mobile', value: 100000n, status: AssetStatus.AVAILABLE, assignee: null },
+    { name: 'Ergonomic Chair', serial: null, category: 'Furniture', value: 35000n, status: AssetStatus.ASSIGNED, assignee: byName('Marie') },
+    { name: 'Conference Room TV', serial: 'TV-01', category: 'Electronics', value: 120000n, status: AssetStatus.IN_REPAIR, assignee: null },
+  ];
+  for (const d of defs) {
+    if (await prisma.asset.findFirst({ where: { workspaceId, name: d.name } })) continue;
+    await prisma.asset.create({
+      data: { workspaceId, name: d.name, serialNumber: d.serial, category: d.category, valueCents: d.value, currency: 'USD', status: d.status, assignedToEmployeeId: d.assignee },
+    });
+  }
+}
+
+// ── Documents (metadata; bytes live in S3) ───────────────────────────────────
+async function seedDocuments(workspaceId: string, userId: string) {
+  const defs = [
+    { name: 'Q3 Financial Report.pdf', storageKey: 'seed/q3-report.pdf', mime: 'application/pdf', size: 2048000n },
+    { name: 'Brand Guidelines 2026.pdf', storageKey: 'seed/brand.pdf', mime: 'application/pdf', size: 512000n },
+  ];
+  for (const d of defs) {
+    if (await prisma.document.findFirst({ where: { workspaceId, name: d.name } })) continue;
+    await prisma.document.create({ data: { workspaceId, name: d.name, storageKey: d.storageKey, mimeType: d.mime, sizeBytes: d.size, uploadedById: userId } });
+  }
+}
+
+// ── Announcements (published + draft) ────────────────────────────────────────
+async function seedAnnouncements(workspaceId: string, userId: string) {
+  const defs = [
+    { title: 'Welcome to your new workspace!', body: 'We are excited to have you on board. Explore the dashboard, add a client, and create your first project.', publishedAt: inDays(0) },
+    { title: 'Q3 all-hands meeting', body: 'Join us next Friday for the quarterly review. Agenda will be shared in the knowledge base.', publishedAt: inDays(-2) },
+    { title: 'New PTO policy (draft)', body: 'Draft of the updated paid-time-off policy — feedback welcome before we publish.', publishedAt: null },
+  ];
+  for (const d of defs) {
+    if (await prisma.announcement.findFirst({ where: { workspaceId, title: d.title } })) continue;
+    await prisma.announcement.create({ data: { workspaceId, title: d.title, body: d.body, publishedAt: d.publishedAt, createdById: userId } });
   }
 }
 
