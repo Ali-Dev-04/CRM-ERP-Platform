@@ -26,6 +26,7 @@ interface AuthState {
     organizationName: string;
   }) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -114,6 +115,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setActiveWorkspaceId(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      setUser(await api.me());
+    } catch {
+      // ignore — caller surfaces its own error
+    }
+  }, []);
+
   const value = useMemo<AuthState>(
     () => ({
       user,
@@ -125,8 +134,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       logout,
+      refreshUser,
     }),
-    [user, orgs, activeOrgId, activeWorkspaceId, loading, setActiveOrg, login, register, logout],
+    [user, orgs, activeOrgId, activeWorkspaceId, loading, setActiveOrg, login, register, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

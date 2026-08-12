@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { TokenService, type TokenPair } from './token.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto, ChangePasswordDto } from './dto/profile.dto';
 import { ConflictError, UnauthorizedError } from '../../common/exceptions/domain.exception';
 import { ErrorCodes } from '../../common/exceptions/error-codes';
 import { claimOrgSlug } from '../../common/utils/claim-slug';
@@ -147,6 +148,44 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     return toUserView(user);
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const data: { firstName?: string; lastName?: string; email?: string } = {};
+    if (dto.firstName !== undefined) data.firstName = dto.firstName;
+    if (dto.lastName !== undefined) data.lastName = dto.lastName;
+    if (dto.email !== undefined && dto.email !== user.email) {
+      const taken = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (taken) throw new ConflictError(ErrorCodes.EMAIL_ALREADY_USED, 'Email is already registered');
+      data.email = dto.email;
+    }
+    const updated = await this.prisma.user.update({ where: { id: userId }, data });
+    this.audit
+      .record({ actorId: userId, action: 'user.update_profile', targetType: 'user', targetId: userId })
+      .catch(() => undefined);
+    return toUserView(updated);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<{ changed: true }> {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const valid = await argon2.verify(user.passwordHash, dto.currentPassword).catch(() => false);
+    if (!valid) {
+      throw new UnauthorizedError(ErrorCodes.INVALID_CREDENTIALS, 'Current password is incorrect');
+    }
+    const passwordHash = await argon2.hash(dto.newPassword, {
+      type: argon2.argon2id,
+      memoryCost: 19_456,
+      timeCost: 2,
+      parallelism: 1,
+    });
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    // Revoke other sessions — current access token stays valid until it expires.
+    await this.tokens.revokeAllForUser(userId).catch(() => undefined);
+    this.audit
+      .record({ actorId: userId, action: 'user.change_password', targetType: 'user', targetId: userId })
+      .catch(() => undefined);
+    return { changed: true };
   }
 
   private async findSystemOwnerRole() {
