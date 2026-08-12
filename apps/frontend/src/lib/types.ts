@@ -59,6 +59,29 @@ export interface Task {
   position: number;
 }
 
+export interface Employee {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  jobTitle: string | null;
+  department: string | null;
+  status: string;
+  phone: string | null;
+  hireDate: string | null;
+  salaryCents: string | null;
+}
+
+export interface Leave {
+  id: string;
+  employeeId: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  reason: string | null;
+}
+
 export interface OrganizationMembership {
   organization: { id: string; name: string; slug: string };
   role: string;

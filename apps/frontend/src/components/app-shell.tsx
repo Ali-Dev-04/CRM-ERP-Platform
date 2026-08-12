@@ -15,6 +15,8 @@ import {
   LogOut,
   Layers,
   ChevronDown,
+  UserCog,
+  CalendarDays,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -26,6 +28,8 @@ const NAV = [
   { href: '/clients', label: 'Clients', icon: Users },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/invoices', label: 'Invoices', icon: FileText },
+  { href: '/employees', label: 'Employees', icon: UserCog },
+  { href: '/leaves', label: 'Leaves', icon: CalendarDays },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/knowledge', label: 'Knowledge', icon: BookOpen },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
