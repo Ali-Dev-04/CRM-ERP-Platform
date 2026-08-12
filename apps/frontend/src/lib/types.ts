@@ -82,6 +82,33 @@ export interface Leave {
   reason: string | null;
 }
 
+export interface Asset {
+  id: string;
+  name: string;
+  serialNumber: string | null;
+  category: string | null;
+  status: string;
+  valueCents: string | null;
+  assignedToEmployeeId: string | null;
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  publishedAt: string | null;
+  createdAt: string;
+}
+
+export interface DocFile {
+  id: string;
+  name: string;
+  storageKey: string;
+  mimeType: string;
+  sizeBytes: string;
+  createdAt: string;
+}
+
 export interface OrganizationMembership {
   organization: { id: string; name: string; slug: string };
   role: string;

@@ -17,6 +17,9 @@ import {
   ChevronDown,
   UserCog,
   CalendarDays,
+  Boxes,
+  Paperclip,
+  Megaphone,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -33,6 +36,9 @@ const NAV = [
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/knowledge', label: 'Knowledge', icon: BookOpen },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/assets', label: 'Assets', icon: Boxes },
+  { href: '/files', label: 'Files', icon: Paperclip },
+  { href: '/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/notifications', label: 'Notifications', icon: Bell },
 ];
 
