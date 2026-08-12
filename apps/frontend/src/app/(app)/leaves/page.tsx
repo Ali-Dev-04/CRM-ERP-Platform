@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Plus, Check, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/use-api';
@@ -23,7 +23,7 @@ export default function LeavesPage() {
   const { activeOrgId, activeWorkspaceId } = useAuth();
   const base = wsPath(activeOrgId, activeWorkspaceId, '');
   const empApi = useApi<Paginated<Employee>>(base ? `${base}/employees?size=100` : null);
-  const employees = empApi.data?.items ?? [];
+  const employees = useMemo(() => empApi.data?.items ?? [], [empApi.data]);
   const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => { if (!selected && employees.length > 0) setSelected(employees[0]!.id); }, [employees, selected]);
 

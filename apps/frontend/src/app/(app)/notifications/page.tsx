@@ -1,11 +1,14 @@
 'use client';
 
-import { Bell, Check } from 'lucide-react';
+import { Bell, Check, CheckCheck } from 'lucide-react';
 import { useApi } from '@/lib/use-api';
+import { apiFetch } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton, EmptyState } from '@/components/ui/skeleton';
+import type { ApiError } from '@/lib/types';
 
 interface Notification {
   id: string;
@@ -16,38 +19,50 @@ interface Notification {
 }
 
 export default function NotificationsPage() {
-  const { data, loading } = useApi<Notification[]>('/notifications');
+  const { data, loading, reload } = useApi<Notification[]>('/notifications');
+  const unread = data?.filter((n) => !n.readAt).length ?? 0;
+
+  async function markRead(id: string) {
+    try { await apiFetch(`/notifications/${id}/read`, { method: 'PATCH' }); reload(); }
+    catch (err) { alert((err as ApiError).message); }
+  }
+  async function markAll() {
+    try { await apiFetch('/notifications/read-all', { method: 'PATCH' }); reload(); }
+    catch (err) { alert((err as ApiError).message); }
+  }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Notifications" subtitle="Your recent activity and alerts." />
+      <PageHeader
+        title="Notifications"
+        subtitle={unread > 0 ? `${unread} unread` : 'Your recent activity and alerts.'}
+        actions={unread > 0 ? <Button variant="outline" size="sm" onClick={markAll} className="gap-1.5"><CheckCheck className="h-4 w-4" /> Mark all read</Button> : undefined}
+      />
 
-      <Card className="card-elevated">
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-3 p-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
-          ) : data && data.length > 0 ? (
-            <ul className="divide-y divide-border">
-              {data.map((n) => (
-                <li key={n.id} className={`flex items-start gap-3 p-4 ${n.readAt ? 'opacity-60' : ''}`}>
-                  <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${n.readAt ? 'bg-muted text-muted-foreground' : 'brand-gradient text-white'}`}>
-                    {n.readAt ? <Check className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+      <Card className="card-elevated"><CardContent className="p-0">
+        {loading ? <div className="space-y-3 p-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
+        : data && data.length > 0 ? (
+          <ul className="divide-y divide-border">
+            {data.map((n) => (
+              <li key={n.id} className={`flex items-start gap-3 p-4 ${n.readAt ? 'opacity-60' : ''}`}>
+                <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${n.readAt ? 'bg-muted text-muted-foreground' : 'brand-gradient text-white'}`}>
+                  {n.readAt ? <Check className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium">{n.title}</p>
+                    <span className="shrink-0 text-xs text-muted-foreground">{formatDate(n.createdAt)}</span>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium">{n.title}</p>
-                      <span className="shrink-0 text-xs text-muted-foreground">{formatDate(n.createdAt)}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{n.message}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState icon={<Bell className="h-5 w-5" />} title="You're all caught up" hint="New notifications will show here." />
-          )}
-        </CardContent>
-      </Card>
+                  <p className="text-sm text-muted-foreground">{n.message}</p>
+                </div>
+                {!n.readAt ? (
+                  <button onClick={() => markRead(n.id)} className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Mark read"><Check className="h-4 w-4" /></button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : <EmptyState icon={<Bell className="h-5 w-5" />} title="You're all caught up" hint="New notifications will show here." />}
+      </CardContent></Card>
     </div>
   );
 }

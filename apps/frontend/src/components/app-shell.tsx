@@ -20,6 +20,8 @@ import {
   Boxes,
   Paperclip,
   Megaphone,
+  Sparkles,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -39,7 +41,9 @@ const NAV = [
   { href: '/assets', label: 'Assets', icon: Boxes },
   { href: '/files', label: 'Files', icon: Paperclip },
   { href: '/announcements', label: 'Announcements', icon: Megaphone },
+  { href: '/assistant', label: 'AI Assistant', icon: Sparkles },
   { href: '/notifications', label: 'Notifications', icon: Bell },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 function Logo() {

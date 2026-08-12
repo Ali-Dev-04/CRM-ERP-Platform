@@ -51,6 +51,12 @@ export interface Project {
   status: string;
 }
 
+export interface Meeting {
+  id: string;
+  title: string;
+  scheduledAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -124,4 +130,10 @@ export interface ApiError {
   code: string;
   message: string;
   details?: unknown;
+}
+
+export interface AiResult {
+  content: string;
+  model: string;
+  mocked: boolean;
 }
