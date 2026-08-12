@@ -1,4 +1,4 @@
-# CRM + ERP Platform — Project Presentation
+# CRM + ERP Platform — Project Presentation (Customer Relationship Management + Enterprise Resource Planning)
 
 > A walkthrough for leadership: what we built, how it's engineered, how we
 > verified it, and what comes next. Pair this with a live demo

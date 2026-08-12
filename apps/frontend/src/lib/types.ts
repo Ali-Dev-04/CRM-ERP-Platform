@@ -26,7 +26,10 @@ export interface Client {
   id: string;
   name: string;
   email: string | null;
+  phone: string | null;
   company: string | null;
+  address: string | null;
+  notes: string | null;
   status: string;
   createdAt: string;
 }
