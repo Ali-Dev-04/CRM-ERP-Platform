@@ -1,16 +1,16 @@
 'use client';
 
-import { Users, FolderKanban, BadgeCheck, CheckCircle2, DollarSign, AlertTriangle, Clock } from 'lucide-react';
+import { Users, FolderKanban, BadgeCheck, CheckCircle2, DollarSign, AlertTriangle, Clock, CalendarDays } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/use-api';
 import { wsPath } from '@/lib/urls';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MoneyBarChart } from '@/components/charts/bar-chart';
 import { StatusPill } from '@/components/ui/status-pill';
 import { Skeleton, EmptyState } from '@/components/ui/skeleton';
-import type { AnalyticsOverview, Task } from '@/lib/types';
+import type { AnalyticsOverview, Meeting, Paginated, Task } from '@/lib/types';
 
 interface RevenuePoint { month: string; totalCents: string }
 interface Notif { id: string; title: string; message: string; readAt: string | null }
@@ -41,6 +41,7 @@ export default function DashboardPage() {
   // Member data
   const { data: myTasks } = useApi<Task[]>(isMember && base ? `${base}/me/tasks` : null);
   const { data: myNotifs } = useApi<Notif[]>(isMember ? '/notifications' : null);
+  const { data: meetingsData } = useApi<Paginated<Meeting>>(isMember && base ? `${base}/meetings?size=5` : null);
 
   // ── Member: personal "My focus" view ──────────────────────────────────────
   if (isMember) {
@@ -76,6 +77,24 @@ export default function DashboardPage() {
                   ))}
                 </ul>
               ) : <EmptyState title="No notifications" />) : <Skeleton className="h-32" />}
+            </CardContent>
+          </Card>
+          <Card className="card-elevated">
+            <CardHeader className="flex-row items-center gap-2 space-y-0">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-base">Upcoming meetings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {meetingsData ? (meetingsData.items.length > 0 ? (
+                <ul className="space-y-2">
+                  {meetingsData.items.map((m) => (
+                    <li key={m.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                      <span className="text-sm font-medium">{m.title}</span>
+                      <span className="text-xs text-muted-foreground">{formatDate(m.scheduledAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : <EmptyState title="No meetings scheduled" />) : <Skeleton className="h-32" />}
             </CardContent>
           </Card>
         </div>
