@@ -1,6 +1,8 @@
 import type { ApiError, AuthResponse, UserView } from './types';
 
-const API_BASE = '/api';
+// In dev, call the backend directly to avoid the Next.js proxy timeout on
+// long-running requests (AI calls take 10-20s). CORS is configured on the API.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 const ACCESS_KEY = 'crm.accessToken';
 const REFRESH_KEY = 'crm.refreshToken';
 
