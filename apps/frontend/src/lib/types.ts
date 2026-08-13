@@ -7,6 +7,8 @@ export interface UserView {
   createdAt: string;
 }
 
+export type Role = 'Owner' | 'Admin' | 'Member';
+
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
@@ -63,6 +65,7 @@ export interface Task {
   status: string;
   priority: string;
   position: number;
+  project?: { id: string; name: string };
 }
 
 export interface Employee {
@@ -117,7 +120,7 @@ export interface DocFile {
 
 export interface OrganizationMembership {
   organization: { id: string; name: string; slug: string };
-  role: string;
+  role: Role;
 }
 
 export interface AnalyticsOverview {
@@ -136,4 +139,18 @@ export interface AiResult {
   content: string;
   model: string;
   mocked: boolean;
+}
+
+export interface Member {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  status: string;
+}
+
+export interface InviteResult {
+  member: Member;
+  tempPassword: string | null;
 }

@@ -30,6 +30,8 @@ import { AnnouncementsModule } from './modules/announcements/announcements.modul
 import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AiModule } from './modules/ai/ai.module';
+import { MembersModule } from './modules/members/members.module';
+import { MeModule } from './modules/me/me.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
@@ -75,6 +77,8 @@ import { PermissionsGuard } from './modules/rbac/permissions.guard';
     KnowledgeModule,
     AnalyticsModule,
     AiModule,
+    MembersModule,
+    MeModule,
     HealthModule,
   ],
   providers: [

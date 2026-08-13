@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, tokens } from './api';
-import type { OrganizationMembership, UserView } from './types';
+import type { OrganizationMembership, Role, UserView } from './types';
 
 interface Workspace {
   id: string;
@@ -16,6 +16,8 @@ interface AuthState {
   activeOrgId: string | null;
   activeWorkspaceId: string | null;
   loading: boolean;
+  activeRole: Role | null;
+  isManager: boolean;
   setActiveOrg: (id: string) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (body: {
@@ -123,6 +125,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Derived: the user's role in the active organization.
+  const activeRole = useMemo<Role | null>(
+    () => orgs.find((m) => m.organization.id === activeOrgId)?.role ?? null,
+    [orgs, activeOrgId],
+  );
+  const isManager = activeRole === 'Owner' || activeRole === 'Admin';
+
   const value = useMemo<AuthState>(
     () => ({
       user,
@@ -130,13 +139,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       activeOrgId,
       activeWorkspaceId,
       loading,
+      activeRole,
+      isManager,
       setActiveOrg,
       login,
       register,
       logout,
       refreshUser,
     }),
-    [user, orgs, activeOrgId, activeWorkspaceId, loading, setActiveOrg, login, register, logout, refreshUser],
+    [user, orgs, activeOrgId, activeWorkspaceId, loading, activeRole, isManager, setActiveOrg, login, register, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -22,26 +22,31 @@ import {
   Megaphone,
   Sparkles,
   Settings,
+  UserPlus,
 } from 'lucide-react';
+import type { Role } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 
-const NAV = [
+type NavItem = { href: string; label: string; icon: React.ElementType; roles?: Role[] };
+
+const NAV: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/clients', label: 'Clients', icon: Users },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
-  { href: '/invoices', label: 'Invoices', icon: FileText },
-  { href: '/employees', label: 'Employees', icon: UserCog },
+  { href: '/invoices', label: 'Invoices', icon: FileText, roles: ['Owner', 'Admin'] },
+  { href: '/employees', label: 'Employees', icon: UserCog, roles: ['Owner', 'Admin'] },
   { href: '/leaves', label: 'Leaves', icon: CalendarDays },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/knowledge', label: 'Knowledge', icon: BookOpen },
-  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/assets', label: 'Assets', icon: Boxes },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3, roles: ['Owner', 'Admin'] },
+  { href: '/assets', label: 'Assets', icon: Boxes, roles: ['Owner', 'Admin'] },
   { href: '/files', label: 'Files', icon: Paperclip },
   { href: '/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/assistant', label: 'AI Assistant', icon: Sparkles },
+  { href: '/members', label: 'Members', icon: UserPlus, roles: ['Owner', 'Admin'] },
   { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -86,7 +91,7 @@ function OrgSwitcher({ className }: { className?: string }) {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, activeRole } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -119,7 +124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <p className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             Menu
           </p>
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {NAV.filter((item) => !item.roles || !activeRole || item.roles.includes(activeRole)).map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
             return (
               <Link
@@ -142,7 +147,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3 rounded-lg px-2 py-2">
             <Avatar name={`${user.firstName} ${user.lastName}`} size={36} />
             <div className="min-w-0 flex-1 leading-tight">
-              <p className="truncate text-sm font-semibold">{user.firstName} {user.lastName}</p>
+              <p className="truncate text-sm font-semibold">
+                {user.firstName} {user.lastName}
+                {activeRole && <span className="ml-2 inline-block rounded-full bg-primary-soft px-1.5 py-0.5 align-middle text-[10px] font-semibold text-primary">{activeRole}</span>}
+              </p>
               <p className="truncate text-xs text-muted-foreground">{user.email}</p>
             </div>
           </div>

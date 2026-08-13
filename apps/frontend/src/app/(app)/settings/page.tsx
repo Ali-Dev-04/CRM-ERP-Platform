@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Building2, UserCircle, Pencil, KeyRound, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { Building2, UserCircle, Pencil, KeyRound, ShieldCheck, Users } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { apiFetch } from '@/lib/api';
 import { PageHeader } from '@/components/page-header';
@@ -22,7 +23,7 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export default function SettingsPage() {
-  const { user, orgs, activeOrgId, refreshUser } = useAuth();
+  const { user, orgs, activeOrgId, refreshUser, isManager } = useAuth();
   const activeOrg = orgs.find((m) => m.organization.id === activeOrgId)?.organization;
   const role = orgs.find((m) => m.organization.id === activeOrgId)?.role;
 
@@ -127,6 +128,22 @@ export default function SettingsPage() {
           <p className="text-sm text-muted-foreground">Update your password. Changing it signs out other active sessions.</p>
         </CardContent>
       </Card>
+
+      {/* Members management (managers only) */}
+      {isManager && (
+        <Card className="card-elevated">
+          <CardHeader className="flex-row items-center justify-between space-y-0">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-primary"><Users className="h-4 w-4" /></div>
+              <CardTitle className="text-base">Team</CardTitle>
+            </div>
+            <Link href="/members" className="text-sm font-medium text-primary hover:underline">Manage members →</Link>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Invite people, assign Admin/Member roles, and remove access.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Edit profile modal */}
       <Modal open={showProfile} onClose={() => setShowProfile(false)} title="Edit profile">

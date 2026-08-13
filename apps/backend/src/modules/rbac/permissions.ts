@@ -44,6 +44,7 @@ export const PERMISSIONS = [
   'knowledge:read',
   'knowledge:write',
   'org:manage',
+  'members:manage',
   'audit:read',
 ] as const;
 

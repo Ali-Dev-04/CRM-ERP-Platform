@@ -86,6 +86,7 @@ async function main(): Promise<void> {
   // ── 3) Demo data ──────────────────────────────────────────────────────────
   await seedClients(workspace.id, user.id);
   await seedProjectsAndTasks(workspace.id, user.id);
+  await seedTeamMembers(org.id, workspace.id);
   await seedInvoicesAndPayments(workspace.id);
   await seedMeetings(workspace.id, user.id, org.id);
   await seedKnowledge(workspace.id, user.id);
@@ -97,7 +98,10 @@ async function main(): Promise<void> {
   await seedAnnouncements(workspace.id, user.id);
   await seedNotifications(user.id, org.id);
 
-  console.log(`\nSeed complete — login: ${email} / DemoPass12345  (org: ${org.slug})`);
+  console.log(`\nSeed complete — three demo profiles in org "${org.slug}":`);
+  console.log(`  Owner:  demo@crm.dev / DemoPass12345`);
+  console.log(`  Admin:  admin@crm.dev / AdminPass12345`);
+  console.log(`  Member: member@crm.dev / MemberPass12345`);
 }
 
 // ── Clients ──────────────────────────────────────────────────────────────────
@@ -243,6 +247,40 @@ async function seedProjectsAndTasks(workspaceId: string, userId: string) {
   await ensureTask(mobile.id, 'Choose tech stack', TaskStatus.IN_PROGRESS, TaskPriority.HIGH, null);
   await ensureTask(mobile.id, 'Design login flow', TaskStatus.TODO, TaskPriority.MEDIUM, inDays(7));
   await ensureTask(mobile.id, 'Build prototype', TaskStatus.TODO, TaskPriority.URGENT, inDays(12));
+}
+
+// ── Team members (Admin + Member for role-based demo) ────────────────────────
+async function seedTeamMembers(organizationId: string, workspaceId: string) {
+  const adminRole = await prisma.role.findFirstOrThrow({ where: { name: 'Admin', organizationId: null, isSystem: true } });
+  const memberRole = await prisma.role.findFirstOrThrow({ where: { name: 'Member', organizationId: null, isSystem: true } });
+
+  const adminEmail = 'admin@crm.dev';
+  const adminHash = await argon2.hash('AdminPass12345', { type: argon2.argon2id });
+  const admin = await prisma.user.upsert({
+    where: { email: adminEmail }, update: {},
+    create: { email: adminEmail, passwordHash: adminHash, firstName: 'Alan', lastName: 'Kay' },
+  });
+  await prisma.membership.upsert({
+    where: { userId_organizationId: { userId: admin.id, organizationId } }, update: {},
+    create: { userId: admin.id, organizationId, roleId: adminRole.id },
+  });
+
+  const memberEmail = 'member@crm.dev';
+  const memberHash = await argon2.hash('MemberPass12345', { type: argon2.argon2id });
+  const member = await prisma.user.upsert({
+    where: { email: memberEmail }, update: {},
+    create: { email: memberEmail, passwordHash: memberHash, firstName: 'Margaret', lastName: 'Hamilton' },
+  });
+  await prisma.membership.upsert({
+    where: { userId_organizationId: { userId: member.id, organizationId } }, update: {},
+    create: { userId: member.id, organizationId, roleId: memberRole.id },
+  });
+
+  // Assign some tasks to the Member so their dashboard shows data.
+  const tasks = await prisma.task.findMany({ where: { project: { workspaceId } }, take: 4 });
+  for (const t of tasks) {
+    await prisma.task.update({ where: { id: t.id }, data: { assigneeId: member.id } });
+  }
 }
 
 // ── Invoices + Payments (feed Analytics revenue/outstanding/overdue) ─────────
