@@ -32,6 +32,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AiModule } from './modules/ai/ai.module';
 import { MembersModule } from './modules/members/members.module';
 import { MeModule } from './modules/me/me.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
@@ -79,6 +80,7 @@ import { PermissionsGuard } from './modules/rbac/permissions.guard';
     AiModule,
     MembersModule,
     MeModule,
+    BillingModule,
     HealthModule,
   ],
   providers: [

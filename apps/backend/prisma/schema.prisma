@@ -180,6 +180,7 @@ model Organization {
   workspaces  Workspace[]
   memberships Membership[]
   auditLogs   AuditLog[]
+  usage       Usage?
 
   @@index([ownerId])
 }
@@ -622,6 +623,21 @@ model Document {
 }
 
 // ── Platform ─────────────────────────────────────────────────────────────────
+
+// Metered usage per organization for plan enforcement. One row per org;
+// counters reset lazily when the billing month rolls over (see UsageService).
+model Usage {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  periodStart    DateTime @default(now())
+  aiCalls        Int      @default(0)
+  aiTokensUsed   Int      @default(0)
+  storageBytes   BigInt   @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+}
 
 model Notification {
   id             String    @id @default(cuid())

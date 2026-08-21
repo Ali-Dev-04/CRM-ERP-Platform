@@ -4,6 +4,7 @@ import * as argon2 from 'argon2';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { RbacService } from '../rbac/rbac.service';
+import { UsageService } from '../billing/usage.service';
 import { AuditService } from '../audit/audit.service';
 import { ConflictError, NotFoundError, ValidationError } from '../../common/exceptions/domain.exception';
 import { ErrorCodes } from '../../common/exceptions/error-codes';
@@ -35,6 +36,7 @@ export class MembersService {
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
     private readonly rbac: RbacService,
+    private readonly usage: UsageService,
     private readonly audit: AuditService,
   ) {}
 
@@ -57,6 +59,7 @@ export class MembersService {
 
   async invite(actorId: string, organizationId: string, dto: InviteMemberDto): Promise<InviteResult> {
     await this.organizations.requireMembership(actorId, organizationId);
+    await this.usage.assertSeatQuota(organizationId);
     const role = await this.requireSystemRole(dto.role);
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     let tempPassword: string | null = null;

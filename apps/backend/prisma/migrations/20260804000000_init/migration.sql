@@ -410,6 +410,20 @@ CREATE TABLE "Document" (
 );
 
 -- CreateTable
+CREATE TABLE "Usage" (
+    "id" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "periodStart" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "aiCalls" INTEGER NOT NULL DEFAULT 0,
+    "aiTokensUsed" INTEGER NOT NULL DEFAULT 0,
+    "storageBytes" BIGINT NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Usage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Notification" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -590,6 +604,9 @@ CREATE UNIQUE INDEX "Asset_workspaceId_serialNumber_key" ON "Asset"("workspaceId
 CREATE INDEX "Document_workspaceId_createdAt_idx" ON "Document"("workspaceId", "createdAt");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Usage_organizationId_key" ON "Usage"("organizationId");
+
+-- CreateIndex
 CREATE INDEX "Notification_userId_createdAt_idx" ON "Notification"("userId", "createdAt");
 
 -- CreateIndex
@@ -708,6 +725,9 @@ ALTER TABLE "Asset" ADD CONSTRAINT "Asset_workspaceId_fkey" FOREIGN KEY ("worksp
 
 -- AddForeignKey
 ALTER TABLE "Document" ADD CONSTRAINT "Document_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Usage" ADD CONSTRAINT "Usage_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -96,6 +96,7 @@ async function main(): Promise<void> {
   await seedAssets(workspace.id, employees);
   await seedDocuments(workspace.id, user.id);
   await seedAnnouncements(workspace.id, user.id);
+  await seedUsage(org.id);
   await seedNotifications(user.id, org.id);
 
   console.log(`\nSeed complete — three demo profiles in org "${org.slug}":`);
@@ -395,6 +396,19 @@ async function seedKnowledge(workspaceId: string, userId: string) {
   await ensureArticle('Getting Started Guide', 'Welcome! Here is how to set up your first client, project, and invoice.', 'Onboarding', true);
   await ensureArticle('Refund Policy', 'Invoices can be cancelled while in DRAFT. Paid invoices require a refund payment record.', 'Billing', true);
   await ensureArticle('Roadmap 2026', 'Draft plan for Q3/Q4 features. Not published yet.', 'Internal', false);
+}
+
+// ── Usage (so the Billing page shows meaningful meters) ─────────────────────
+async function seedUsage(organizationId: string) {
+  if (await prisma.usage.findUnique({ where: { organizationId } })) return;
+  await prisma.usage.create({
+    data: {
+      organizationId,
+      aiCalls: 12,          // 12/50 on the Free plan
+      aiTokensUsed: 18_400,
+      storageBytes: 2_560_000n, // ≈ the seeded documents' sizes
+    },
+  });
 }
 
 // ── Notifications ────────────────────────────────────────────────────────────

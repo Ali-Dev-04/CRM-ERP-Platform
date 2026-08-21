@@ -23,6 +23,7 @@ import {
   Sparkles,
   Settings,
   UserPlus,
+  CreditCard,
 } from 'lucide-react';
 import type { Role } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
@@ -47,6 +48,7 @@ const NAV: NavItem[] = [
   { href: '/announcements', label: 'Announcements', icon: Megaphone },
   { href: '/assistant', label: 'AI Assistant', icon: Sparkles },
   { href: '/members', label: 'Members', icon: UserPlus, roles: ['Owner', 'Admin'] },
+  { href: '/billing', label: 'Billing', icon: CreditCard, roles: ['Owner'] },
   { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];

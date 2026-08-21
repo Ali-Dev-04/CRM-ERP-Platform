@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Document } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
+import { UsageService } from '../billing/usage.service';
 import { AuditService } from '../audit/audit.service';
 import { NotFoundError } from '../../common/exceptions/domain.exception';
 import { ErrorCodes } from '../../common/exceptions/error-codes';
@@ -25,6 +26,7 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly organizations: OrganizationsService,
+    private readonly usage: UsageService,
     private readonly audit: AuditService,
   ) {}
 
@@ -53,6 +55,8 @@ export class DocumentsService {
     if (!doc) throw new NotFoundError(ErrorCodes.NOT_FOUND, 'Document not found');
     // NOTE: the caller (M5 file service) is responsible for deleting the S3 object.
     await this.prisma.document.delete({ where: { id: documentId } });
+    // Release the plan's storage quota.
+    await this.usage.removeStorage(orgId, doc.sizeBytes).catch(() => undefined);
     this.audit.record({ actorId, organizationId: orgId, action: 'document.delete', targetType: 'document', targetId: documentId }).catch(() => undefined);
     return { deleted: true };
   }

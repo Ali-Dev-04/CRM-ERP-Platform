@@ -45,6 +45,7 @@ export const PERMISSIONS = [
   'knowledge:write',
   'org:manage',
   'members:manage',
+  'billing:manage',
   'audit:read',
 ] as const;
 
@@ -64,7 +65,9 @@ export const SYSTEM_ROLES = {
   },
   ADMIN: {
     name: 'Admin',
-    permissions: ALL_PERMISSIONS.filter((p) => p !== 'org:manage'),
+    // Admin gets everything except org ownership and billing (the account
+    // holder's domain): org:manage + billing:manage stay Owner-only.
+    permissions: ALL_PERMISSIONS.filter((p) => p !== 'org:manage' && p !== 'billing:manage'),
   },
   MEMBER: {
     name: 'Member',

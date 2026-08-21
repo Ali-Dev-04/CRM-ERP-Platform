@@ -154,3 +154,27 @@ export interface InviteResult {
   member: Member;
   tempPassword: string | null;
 }
+
+export interface PlanLimits {
+  key: string;
+  label: string;
+  tagline: string;
+  priceMonthlyCents: number | null;
+  maxMembers: number | null;
+  maxAiCalls: number | null;
+  maxStorageBytes: number | null;
+  order: number;
+  highlight?: boolean;
+}
+
+export interface BillingOverview {
+  plan: string;
+  limits: PlanLimits;
+  memberCount: number;
+  usage: {
+    aiCalls: number;
+    aiTokensUsed: number;
+    storageBytes: string; // BigInt → string
+    periodStart: string;
+  };
+}
